@@ -1,0 +1,50 @@
+apiVersion: internal.odigos.io/v1beta1
+kind: Destination
+metadata:
+  type: bronto
+  displayName: Bronto
+  category: managed
+spec:
+  image: bronto.svg
+  signals:
+    traces:
+      supported: true
+    metrics:
+      supported: true
+    logs:
+      supported: true
+    profiles:
+      supported: false
+  fields:
+    - name: BRONTO_REGION
+      displayName: Region
+      componentType: dropdown
+      componentProps:
+        values:
+          - eu
+          - us
+        required: true
+        tooltip: "The Bronto region your account lives in. A mismatched region is rejected with the same 401 as an invalid API key."
+      initialValue: "eu"
+    - name: BRONTO_API_KEY
+      displayName: Bronto API Key
+      componentType: input
+      secret: true
+      componentProps:
+        type: password
+        required: true
+        tooltip: "An API key with the Ingestion role, created under Settings -> API Keys in the Bronto UI."
+    - name: BRONTO_COLLECTION
+      displayName: Collection
+      componentType: input
+      componentProps:
+        type: text
+        required: false
+        placeholder: "prod-eu-west-1"
+        tooltip: "Optional. Groups this cluster's data under a single Bronto collection, overriding service.namespace. Useful for identifying the source cluster."
+  note:
+    type: Note
+    content: |
+      Bronto supports sums, gauges, summaries, and explicit histograms. Exponential histograms are not supported.
+
+      Metrics are converted from cumulative to delta before export, because Bronto's metric functions are designed around delta temporality.

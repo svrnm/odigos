@@ -1,0 +1,127 @@
+---
+title: 'Bronto'
+description: 'Configuring the Bronto backend (Managed)'
+sidebarTitle: 'Bronto'
+icon: 'signal-stream'
+---
+
+### Getting Started
+
+<img src="https://d15jtxgb40qetw.cloudfront.net/bronto.svg" alt="bronto" className="not-prose h-20" />
+
+{/*
+    Add custom content here (under this comment)...
+
+    e.g.
+
+    **Creating Account**<br />
+    Go to the **[🔗 website](https://odigos.io) > Account** and click **Sign Up**
+
+    **Obtaining Access Token**<br />
+    Go to **⚙️ > Access Tokens** and click **Create New**
+
+    !! Do not remove this comment, this acts as a key indicator in `docs/sync-dest-doc.py` !!
+    !! START CUSTOM EDIT !!
+*/}
+
+[Bronto](https://bronto.io) is a managed observability platform for logs, metrics, and traces.
+
+**Creating an Account**<br />
+Go to **[🔗 bronto.io](https://bronto.io)** and sign up. Note whether your account is provisioned in the **EU** or **US** region — you need it below.
+
+**Obtaining an API Key**<br />
+In the Bronto UI, go to **Settings > API Keys** and create a key with the **Ingestion** role. Bronto does not display the full key again after generation, so store it before leaving the page.
+
+**Finding your Region**<br />
+Bronto ingestion is region-specific. Odigos sends to `https://ingestion.<region>.bronto.io`, so `BRONTO_REGION` must match the region your account lives in — a mismatch is rejected with the same `401` as an invalid key.
+
+{/*
+    !! Do not remove this comment, this acts as a key indicator in `docs/sync-dest-doc.py` !!
+    !! END CUSTOM EDIT !!
+*/}
+
+### Configuring Destination Fields
+
+<Accordion title="Supported Signals:">
+  ✅ Traces
+  ✅ Metrics
+  ✅ Logs
+  ❌ Profiles
+</Accordion>
+
+- **BRONTO_REGION** `string` : Region. The Bronto region your account lives in. A mismatched region is rejected with the same 401 as an invalid API key.
+  - This field is required and defaults to `eu`
+- **BRONTO_API_KEY** `string` : Bronto API Key. An API key with the Ingestion role, created under Settings -> API Keys in the Bronto UI.
+  - This field is required
+- **BRONTO_COLLECTION** `string` : Collection. Optional. Groups this cluster's data under a single Bronto collection, overriding service.namespace. Useful for identifying the source cluster.
+  - This field is optional
+  - Example: `prod-eu-west-1`
+
+<Note>
+  Bronto supports sums, gauges, summaries, and explicit histograms. Exponential histograms are not supported.
+
+  Metrics are converted from cumulative to delta before export, because Bronto's metric functions are designed around delta temporality.
+</Note>
+
+### Adding Destination to Odigos
+
+There are two primary methods for configuring destinations in Odigos:
+
+##### **Using the UI**
+
+<Steps>
+  <Step>
+    Use the [Odigos CLI](https://docs.odigos.io/cli/odigos_ui) to access the UI
+    ```bash
+    odigos ui
+    ```
+  </Step>
+  <Step>
+    Click on `Add Destination`, select `Bronto` and follow the on-screen instructions
+  </Step>
+</Steps>
+
+##### **Using Kubernetes manifests**
+
+<Steps>
+  <Step>
+    Save the YAML below to a file (e.g. `bronto.yaml`)
+    ```yaml
+    apiVersion: odigos.io/v1alpha1
+    kind: Destination
+    metadata:
+      name: bronto-example
+      namespace: odigos-system
+    spec:
+      data:
+        BRONTO_REGION: '<Region (default: eu) (options: [eu, us])>'
+        # Note: The commented fields below are optional.
+        # BRONTO_COLLECTION: <Collection>
+      destinationName: bronto
+      secretRef:
+        name: bronto-secret
+      signals:
+      - TRACES
+      - METRICS
+      - LOGS
+      type: bronto
+
+    ---
+
+    apiVersion: v1
+    data:
+      BRONTO_API_KEY: <Base64 Bronto API Key>
+    kind: Secret
+    metadata:
+      name: bronto-secret
+      namespace: odigos-system
+    type: Opaque
+    ```
+  </Step>
+  <Step>
+    Apply the YAML using `kubectl`
+    ```bash
+    kubectl apply -f bronto.yaml
+    ```
+  </Step>
+</Steps>
